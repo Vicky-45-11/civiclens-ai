@@ -16,11 +16,11 @@ A civic issue reporting and resolution platform. Residents photograph a problem,
 | Staff | Moderation queue (approve / reject with reason), triage (human severity, status, assignee), resolution evidence, merge duplicates |
 | Admin | Role management, analytics (median days to resolve, open by severity, per-category, hotspots, AI agreement) |
 | Safety | Human review before anything is public, EXIF/GPS stripped from every photo, reporter hidden from public views, flagging, rate limits, CSRF header, HTTP-only cookie sessions |
-| Data | Alembic migration, CHECK constraints, GiST spatial index, seed script, 35 backend tests, 7 frontend tests |
+| Data | Alembic migration, CHECK constraints, GiST spatial index, seed script, 38 backend tests, 7 frontend tests |
 
 ## Honest limits (read before relying on it)
 
-- **No trained model ships.** Without a checkpoint the app runs in **demo mode**: the category is whatever the resident chose, there is no confidence score, and the UI says "Demo mode". The training script exists (`backend/app/ai/train.py`) but you must supply labelled photos. Pipeline tests use a tiny synthetic model and only prove the code path, not accuracy.
+- **No trained model ships.** Without a checkpoint the app runs in **demo mode**: the category is whatever the resident chose, there is no confidence score, and the UI says "Demo mode". The training script exists (`backend/app/ai/train.py`) but you must supply labelled photos. Pipeline tests (`backend/tests/test_ai.py`) train a tiny synthetic model and only prove the code path, not accuracy.
 - **Severity is a heuristic**, not a model. It is a suggestion; a person must confirm severity before triage.
 - **Rate limiting is in-process.** Run one API instance, or replace it with a shared store (Redis) before scaling out.
 - **S3 storage is implemented but untested.** Local disk storage is what the tests cover.
