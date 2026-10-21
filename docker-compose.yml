@@ -1,0 +1,32 @@
+# Local stack: PostGIS + API + web. Passwords here are for local development only.
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: civiclens
+      POSTGRES_PASSWORD: civiclens
+      POSTGRES_DB: civiclens
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U civiclens"]
+      interval: 5s
+      retries: 10
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://civiclens:civiclens@db:5432/civiclens
+      STORAGE_DIR: /data/storage
+    volumes: ["uploads:/data/storage"]
+    ports: ["8000:8000"]
+    depends_on:
+      db: { condition: service_healthy }
+  frontend:
+    build:
+      context: ./frontend
+      args: { BACKEND_URL: "http://backend:8000" }
+    ports: ["3000:3000"]
+    depends_on: [backend]
+volumes:
+  pgdata:
+  uploads:
