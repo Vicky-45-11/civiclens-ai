@@ -12,8 +12,8 @@ export default {
         line: "#ddd7ca",
       },
       fontFamily: {
-        display: ["Georgia", "Cambria", "Times New Roman", "serif"],
-        sans: ["ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
+        display: ["'Fraunces Variable'", "Georgia", "Cambria", "Times New Roman", "serif"],
+        sans: ["'Inter Variable'", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
       },
       boxShadow: { card: "0 1px 0 rgba(20,35,58,0.04), 0 8px 24px -12px rgba(20,35,58,0.18)" },
     },

@@ -12,6 +12,7 @@ A civic issue reporting and resolution platform. Residents photograph a problem,
 | AI | PyTorch MobileNetV3 classifier (loads a checkpoint you train), image-statistics severity suggestion, perceptual-hash duplicate matching |
 | Duplicates | PostGIS radius search (60 m, same category, active, last 120 days) plus photo similarity. Staff merge; nothing merges automatically |
 | Map | Tamil Nadu / India / World views, "Near me", category chips, server-side clustering in PostGIS that re-groups as you zoom. OpenStreetMap by default; Google Maps when a browser key is set |
+| Interface | Self-hosted Fraunces and Inter fonts (`@fontsource-variable`, no external font requests), scroll reveals, word-by-word heading, count-up numbers, pointer spotlight cards, category marquee. All animation is original code in `frontend/components/fx.tsx` and switches off for visitors who prefer reduced motion |
 | Public stats | Resolution ring, status strip and per-category bars, all computed from the database |
 | Residents | Account, "My reports", status timeline with public notes and resolution photos |
 | Staff | Moderation queue (approve / reject with reason), triage (human severity, status, assignee), resolution evidence, merge duplicates |
