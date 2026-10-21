@@ -9,6 +9,7 @@ import { useAuth } from "./AuthProvider";
 const LINKS = [
   { href: "/map", label: "Map" },
   { href: "/report", label: "Report an issue" },
+  { href: "/game", label: "Play" },
   { href: "/my", label: "My reports" },
   { href: "/about", label: "About & privacy" },
 ];

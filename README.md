@@ -13,12 +13,13 @@ A civic issue reporting and resolution platform. Residents photograph a problem,
 | Duplicates | PostGIS radius search (60 m, same category, active, last 120 days) plus photo similarity. Staff merge; nothing merges automatically |
 | Map | Tamil Nadu / India / World views, "Near me", category chips, server-side clustering in PostGIS that re-groups as you zoom. OpenStreetMap by default; Google Maps when a browser key is set |
 | Interface | Self-hosted Fraunces and Inter fonts (`@fontsource-variable`, no external font requests), scroll reveals, word-by-word heading, count-up numbers, pointer spotlight cards, category marquee. All animation is original code in `frontend/components/fx.tsx` and switches off for visitors who prefer reduced motion |
+| Game | `/game`: Crew Dispatch, a medium-difficulty arcade game. Match crews to random issues before city trust runs out; repeat reports merge into higher-value cases (a nod to duplicate detection); difficulty rises every 8 fixes. Pure fiction, no API calls; best score is kept in the browser. Game rules are unit tested |
 | Public stats | Resolution ring, status strip and per-category bars, all computed from the database |
 | Residents | Account, "My reports", status timeline with public notes and resolution photos |
 | Staff | Moderation queue (approve / reject with reason), triage (human severity, status, assignee), resolution evidence, merge duplicates |
 | Admin | Role management, analytics (median days to resolve, open by severity, per-category, hotspots, AI agreement) |
 | Safety | Human review before anything is public, EXIF/GPS stripped from every photo, reporter hidden from public views, flagging, rate limits, CSRF header, HTTP-only cookie sessions |
-| Data | Alembic migration, CHECK constraints, GiST spatial index, seed script, 35 backend tests, 7 frontend tests |
+| Data | Alembic migration, CHECK constraints, GiST spatial index, seed script, 35 backend tests, 13 frontend tests |
 
 ## Honest limits (read before relying on it)
 
