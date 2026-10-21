@@ -6,13 +6,17 @@ import { api, qs } from "@/lib/api";
 import { categoryColor } from "@/lib/labels";
 import type { Cluster } from "@/lib/types";
 
-const DEFAULT_CENTER: [number, number] = [12.9716, 80.044];
+import { VIEWS, type ViewId } from "@/lib/mapViews";
 
-interface Props {
+export interface MapProps {
   className?: string;
   category?: string;
   status?: string;
   height?: string;
+  /** Preset viewport: the owner's home area, all of India, or the whole world. Defaults to "home". */
+  view?: ViewId;
+  /** Recentre on a point (for example the visitor's location). */
+  focus?: [number, number] | null;
   /** When set the map lets the user drop a pin and reports its position. */
   picker?: { value: [number, number] | null; onChange: (p: [number, number]) => void };
   onOpenIssue?: (id: string) => void;
@@ -20,7 +24,7 @@ interface Props {
 }
 
 /** OpenStreetMap tiles with clusters computed in PostGIS: each pan or zoom asks the API for the visible area. */
-export default function IssueMap({ className = "", category, status, height = "420px", picker, onOpenIssue, onError }: Props) {
+export default function IssueMap({ className = "", category, status, height = "420px", picker, view, focus, onOpenIssue, onError }: MapProps) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const layer = useRef<L.LayerGroup | null>(null);
@@ -36,7 +40,8 @@ export default function IssueMap({ className = "", category, status, height = "4
     const g = layer.current;
     if (!m || !g) return;
     const b = m.getBounds();
-    const bbox = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(",");
+    const wide = b.getEast() - b.getWest() >= 360; // zoomed out past one copy of the world
+    const bbox = [wide ? -180 : Math.max(-180, b.getWest()), Math.max(-90, b.getSouth()), wide ? 180 : Math.min(180, b.getEast()), Math.min(90, b.getNorth())].join(",");
     try {
       const data = await api.get<Cluster[]>(`/issues/clusters${qs({ bbox, zoom: Math.round(m.getZoom()), ...filters.current })}`);
       g.clearLayers();
@@ -67,7 +72,8 @@ export default function IssueMap({ className = "", category, status, height = "4
 
   useEffect(() => {
     if (!el.current || map.current) return;
-    const m = L.map(el.current, { center: picker?.value ?? DEFAULT_CENTER, zoom: picker ? 16 : 13, scrollWheelZoom: !picker });
+    const v = VIEWS[view ?? "home"];
+    const m = L.map(el.current, { center: picker?.value ?? v.center, zoom: picker ? 16 : v.zoom, minZoom: 2, worldCopyJump: true, scrollWheelZoom: !picker });
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(m);
     layer.current = L.layerGroup().addTo(m);
     map.current = m;
@@ -87,6 +93,16 @@ export default function IssueMap({ className = "", category, status, height = "4
   useEffect(() => {
     void load.current();
   }, [category, status]);
+
+  useEffect(() => {
+    if (!view || !map.current) return;
+    const v = VIEWS[view];
+    map.current.setView(v.center, v.zoom);
+  }, [view]);
+
+  useEffect(() => {
+    if (focus && map.current) map.current.setView(focus, 14);
+  }, [focus]);
 
   // Keep the picker pin in sync with the chosen point.
   useEffect(() => {

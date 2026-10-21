@@ -7,6 +7,8 @@ import { api } from "@/lib/api";
 import { CATEGORIES } from "@/lib/labels";
 import type { IssueSummary, Page, Stats } from "@/lib/types";
 import { MapView } from "@/components/MapView";
+import { CategoryBars, ResolutionRing, StatusStrip } from "@/components/StatsCharts";
+import { VIEWS, VIEW_IDS } from "@/lib/mapViews";
 import { Empty, ErrorBox, IssueCard, Spinner } from "@/components/ui";
 import { useRouter } from "next/navigation";
 
@@ -67,12 +69,36 @@ export default function Home() {
         ) : !stats ? (
           <Spinner />
         ) : (
-          <dl className="grid gap-4 sm:grid-cols-3">
-            <Stat label="Public reports" value={String(stats.total)} />
-            <Stat label="Resolved with evidence" value={String(stats.resolved)} />
-            <Stat label="Median days to resolve" value={stats.median_days_to_resolve === null ? "Not enough data yet" : String(stats.median_days_to_resolve)} />
-          </dl>
+          <div className="space-y-4">
+            <dl className="grid gap-4 sm:grid-cols-3">
+              <Stat label="Public reports" value={String(stats.total)} />
+              <Stat label="Resolved with evidence" value={String(stats.resolved)} />
+              <Stat label="Median days to resolve" value={stats.median_days_to_resolve === null ? "Not enough data yet" : String(stats.median_days_to_resolve)} />
+            </dl>
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1fr_1.2fr]">
+              <div className="space-y-4">
+                <ResolutionRing stats={stats} />
+                <StatusStrip stats={stats} />
+              </div>
+              <CategoryBars stats={stats} />
+            </div>
+          </div>
         )}
+      </section>
+
+      <section aria-labelledby="regions-h">
+        <h2 id="regions-h" className="mb-4 text-2xl">
+          Explore by region
+        </h2>
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-3">
+          {VIEW_IDS.map((id) => (
+            <Link key={id} href={`/map?view=${id}`} className="card block p-5 hover:ring-2 hover:ring-civic">
+              <MapPin className="h-5 w-5 text-civic" aria-hidden="true" />
+              <p className="mt-2 font-display text-xl">{VIEWS[id].label}</p>
+              <p className="text-sm text-ink-soft">{id === "home" ? "Centred on 11.33° N, 79.73° E" : id === "india" ? "Zoomed out to all of India" : "The whole world at once"}</p>
+            </Link>
+          ))}
+        </div>
       </section>
 
       <section aria-labelledby="recent-h">

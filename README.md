@@ -11,22 +11,23 @@ A civic issue reporting and resolution platform. Residents photograph a problem,
 | Reporting | Photo upload (up to 4), location by map pin or browser geolocation, category, description, review step with consent |
 | AI | PyTorch MobileNetV3 classifier (loads a checkpoint you train), image-statistics severity suggestion, perceptual-hash duplicate matching |
 | Duplicates | PostGIS radius search (60 m, same category, active, last 120 days) plus photo similarity. Staff merge; nothing merges automatically |
-| Map | Leaflet + OpenStreetMap tiles, server-side clustering in PostGIS that re-groups as you zoom |
+| Map | Tamil Nadu / India / World views, "Near me", category chips, server-side clustering in PostGIS that re-groups as you zoom. OpenStreetMap by default; Google Maps when a browser key is set |
+| Public stats | Resolution ring, status strip and per-category bars, all computed from the database |
 | Residents | Account, "My reports", status timeline with public notes and resolution photos |
 | Staff | Moderation queue (approve / reject with reason), triage (human severity, status, assignee), resolution evidence, merge duplicates |
 | Admin | Role management, analytics (median days to resolve, open by severity, per-category, hotspots, AI agreement) |
 | Safety | Human review before anything is public, EXIF/GPS stripped from every photo, reporter hidden from public views, flagging, rate limits, CSRF header, HTTP-only cookie sessions |
-| Data | Alembic migration, CHECK constraints, GiST spatial index, seed script, 38 backend tests, 7 frontend tests |
+| Data | Alembic migration, CHECK constraints, GiST spatial index, seed script, 35 backend tests, 7 frontend tests |
 
 ## Honest limits (read before relying on it)
 
-- **No trained model ships.** Without a checkpoint the app runs in **demo mode**: the category is whatever the resident chose, there is no confidence score, and the UI says "Demo mode". The training script exists (`backend/app/ai/train.py`) but you must supply labelled photos. Pipeline tests (`backend/tests/test_ai.py`) train a tiny synthetic model and only prove the code path, not accuracy.
+- **No trained model ships.** Without a checkpoint the app runs in **demo mode**: the category is whatever the resident chose, there is no confidence score, and the UI says "Demo mode". The training script exists (`backend/app/ai/train.py`) but you must supply labelled photos. Pipeline tests use a tiny synthetic model and only prove the code path, not accuracy.
 - **Severity is a heuristic**, not a model. It is a suggestion; a person must confirm severity before triage.
 - **Rate limiting is in-process.** Run one API instance, or replace it with a shared store (Redis) before scaling out.
 - **S3 storage is implemented but untested.** Local disk storage is what the tests cover.
 - **Docker files are untested.** `docker-compose.yml` and the Dockerfiles were written but not run in the build environment.
 - **Vercel hosts only the Next.js frontend.** The API needs PostGIS and PyTorch, so it must run elsewhere (Render, Railway, Fly.io, a VM). Two Vercel behaviours are unverified here: proxying `/api/*` to an external backend through a rewrite, and Vercel's request body limit (about 4.5 MB). The browser shrinks photos to 1600 px before upload to stay under it.
-- **Map tiles come from the public OpenStreetMap servers**, which have a usage policy; use a tile provider for real traffic.
+- **Google Maps needs your own API key and has not been run by me.** Without `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` the map uses OpenStreetMap, and the page says so. The Google code path compiles and type-checks but was never exercised against Google's servers. OpenStreetMap's public tile servers have a usage policy; use a tile provider for real traffic.
 - **No email or push notifications**, no password reset, no email verification.
 - The browser journey was checked once with Playwright against a local stack; that script is not included in the repository.
 
@@ -96,6 +97,18 @@ npm run dev
 ```
 
 Open <http://localhost:3000>. The browser only talks to the Next.js origin; `/api/*` is rewritten to `BACKEND_URL`, so session cookies stay first-party.
+
+### Turning on Google Maps (optional)
+
+1. In Google Cloud Console create a project, enable **Maps JavaScript API**, and create an API key.
+2. Restrict the key to **HTTP referrers** (your Vercel domain and `http://localhost:3000/*`). A browser key is visible to every visitor by design, so the restriction is what protects it. Set a quota/budget alert.
+3. Put it in `frontend/.env.local`:
+
+```powershell
+Add-Content frontend\.env.local "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-key-here"
+```
+
+On Vercel add the same variable under Settings, Environment Variables, then redeploy (it is read at build time). The map opens on Tamil Nadu (11.333747, 79.7287696) and has India and World buttons.
 
 ## 4. Training a classifier (optional)
 

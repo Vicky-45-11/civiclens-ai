@@ -1,15 +1,29 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { api, qs } from "@/lib/api";
-import { CATEGORIES } from "@/lib/labels";
 import type { IssueSummary, Page } from "@/lib/types";
 import { MapView } from "@/components/MapView";
+import { CategoryChips, LocateButton, ProviderNote, ViewSwitch } from "@/components/MapControls";
+import { isViewId, type ViewId } from "@/lib/mapViews";
 import { Empty, ErrorBox, IssueCard, PageTitle, Spinner } from "@/components/ui";
 
 export default function MapPage() {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <MapScreen />
+    </Suspense>
+  );
+}
+
+function MapScreen() {
   const router = useRouter();
+  const params = useSearchParams();
+  const initial = params.get("view");
+  const [view, setView] = useState<ViewId>(isViewId(initial) ? initial : "home");
+  const [focus, setFocus] = useState<[number, number] | null>(null);
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
   const [q, setQ] = useState("");
@@ -32,24 +46,18 @@ export default function MapPage() {
 
   return (
     <div>
-      <PageTitle eyebrow="Public map" title="Reports near you">
-        Only reports a moderator has approved are shown. Groups are computed on the server for the area you are viewing; zoom in to separate them.
+      <PageTitle eyebrow="Public map" title="Reports on the map">
+        Switch between Tamil Nadu, India and the whole world, or jump to where you are. Only reports a moderator has approved are shown. Groups are computed on the server for the area you are viewing; zoom in to separate them.
       </PageTitle>
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <ViewSwitch value={view} onChange={(v) => (setView(v), setFocus(null))} />
+        <LocateButton onLocate={setFocus} />
+      </div>
+      <div className="mb-4">
+        <CategoryChips value={category} onChange={(c) => (setCategory(c), setPage(1))} />
+      </div>
       <div className="mb-4 flex flex-wrap items-end gap-3">
-        <div>
-          <label className="label" htmlFor="cat">
-            Category
-          </label>
-          <select id="cat" className="field" value={category} onChange={(e) => (setCategory(e.target.value), setPage(1))}>
-            <option value="">All categories</option>
-            {CATEGORIES.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
+                <div>
           <label className="label" htmlFor="st">
             Status
           </label>
@@ -72,9 +80,10 @@ export default function MapPage() {
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-2">
           <div className="card overflow-hidden p-2">
-            <MapView height="520px" category={category} status={status} onOpenIssue={(id) => router.push(`/issues/${id}`)} onError={setMapError} />
+            <MapView height="520px" view={view} focus={focus} category={category} status={status} onOpenIssue={(id) => router.push(`/issues/${id}`)} onError={setMapError} />
           </div>
           {mapError && <ErrorBox message={mapError} />}
+          <ProviderNote />
         </div>
         <div>
           {error ? (
