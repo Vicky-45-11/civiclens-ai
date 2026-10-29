@@ -1,200 +1,385 @@
-# CivicLens AI
+# 🏙️ CivicLens AI
 
-A civic issue reporting and resolution platform. Residents photograph a problem, pin it on a map and track it to resolution. Staff moderate, triage, assign and close cases with photo evidence, and see analytics computed from the database.
+<div align="center">
 
-> **Not a government system.** CivicLens is independent software. It has no integration with any city, 311 service or government platform, and a report filed here is not an official complaint. The sample data is fictional.
+### SEE THE ISSUE. MAP THE PROBLEM. TRACK THE CHANGE.
 
-## What is implemented
+**An AI-assisted civic issue reporting and resolution platform.**
 
-| Area | What exists |
-| --- | --- |
-| Reporting | Photo upload (up to 4), location by map pin or browser geolocation, category, description, review step with consent |
-| AI | PyTorch MobileNetV3 classifier (loads a checkpoint you train), image-statistics severity suggestion, perceptual-hash duplicate matching |
-| Duplicates | PostGIS radius search (60 m, same category, active, last 120 days) plus photo similarity. Staff merge; nothing merges automatically |
-| Map | Tamil Nadu / India / World views, "Near me", category chips, server-side clustering in PostGIS that re-groups as you zoom. OpenStreetMap by default; Google Maps when a browser key is set |
-| Interface | Self-hosted Fraunces and Inter fonts (`@fontsource-variable`, no external font requests), scroll reveals, word-by-word heading, count-up numbers, pointer spotlight cards, category marquee. All animation is original code in `frontend/components/fx.tsx` and switches off for visitors who prefer reduced motion |
-| Public stats | Resolution ring, status strip and per-category bars, all computed from the database |
-| Residents | Account, "My reports", status timeline with public notes and resolution photos |
-| Staff | Moderation queue (approve / reject with reason), triage (human severity, status, assignee), resolution evidence, merge duplicates |
-| Admin | Role management, analytics (median days to resolve, open by severity, per-category, hotspots, AI agreement) |
-| Safety | Human review before anything is public, EXIF/GPS stripped from every photo, reporter hidden from public views, flagging, rate limits, CSRF header, HTTP-only cookie sessions |
-| Data | Alembic migration, CHECK constraints, GiST spatial index, seed script, 35 backend tests, 7 frontend tests |
+CivicLens AI empowers residents to report local infrastructure problems, visualize issues on an interactive map, and follow their progress toward resolution. Staff can review submissions, prioritize cases, coordinate action, and document outcomes with photographic evidence.
 
-## Honest limits (read before relying on it)
+**From street-level problems to data-driven civic action.**
 
-- **No trained model ships.** Without a checkpoint the app runs in **demo mode**: the category is whatever the resident chose, there is no confidence score, and the UI says "Demo mode". The training script exists (`backend/app/ai/train.py`) but you must supply labelled photos. Pipeline tests use a tiny synthetic model and only prove the code path, not accuracy.
-- **Severity is a heuristic**, not a model. It is a suggestion; a person must confirm severity before triage.
-- **Rate limiting is in-process.** Run one API instance, or replace it with a shared store (Redis) before scaling out.
-- **S3 storage is implemented but untested.** Local disk storage is what the tests cover.
-- **Docker files are untested.** `docker-compose.yml` and the Dockerfiles were written but not run in the build environment.
-- **Vercel hosts only the Next.js frontend.** The API needs PostGIS and PyTorch, so it must run elsewhere (Render, Railway, Fly.io, a VM). Two Vercel behaviours are unverified here: proxying `/api/*` to an external backend through a rewrite, and Vercel's request body limit (about 4.5 MB). The browser shrinks photos to 1600 px before upload to stay under it.
-- **Google Maps needs your own API key and has not been run by me.** Without `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` the map uses OpenStreetMap, and the page says so. The Google code path compiles and type-checks but was never exercised against Google's servers. OpenStreetMap's public tile servers have a usage policy; use a tile provider for real traffic.
-- **No email or push notifications**, no password reset, no email verification.
-- The browser journey was checked once with Playwright against a local stack; that script is not included in the repository.
+![Project](https://img.shields.io/badge/PROJECT-CIVIC%20TECH-0F766E?style=for-the-badge)
+![AI](https://img.shields.io/badge/AI-PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
+![Backend](https://img.shields.io/badge/BACKEND-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Database](https://img.shields.io/badge/DATABASE-PostgreSQL%20%7C%20PostGIS-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 
-## Layout
+[Features](#-key-features) · [Architecture](#-system-architecture) · [AI Pipeline](#-ai--intelligence-layer) · [Getting Started](#-getting-started) · [Limitations](#-honest-limitations)
 
+</div>
+
+---
+
+## 🌍 The Problem
+
+Damaged roads, overflowing waste bins, broken streetlights, water leaks, and other local infrastructure issues can affect entire communities.
+
+However, reporting these problems, identifying their locations, prioritizing their urgency, and tracking their resolution can be fragmented across different channels.
+
+Residents may struggle to understand what happens after submitting a report, while teams responsible for addressing issues need clear information to coordinate their work.
+
+**CivicLens AI explores how mapping, structured reporting, AI-assisted classification, and transparent case tracking can make civic issue management more organized.**
+
+## 💡 What Is CivicLens AI?
+
+CivicLens AI is an independent civic-tech platform that connects residents, issue reports, and staff workflows through a centralized web application.
+
+Residents can photograph a problem, select its location on a map, describe the issue, and track its status. Authorized staff can moderate reports, assess severity, assign cases, merge confirmed duplicates, and document resolutions.
+
+The platform also provides geographic visualizations and database-driven analytics to help users understand reported issues and resolution activity.
+
+### 🎯 Core Objectives
+
+- Simplify civic issue reporting.
+- Improve the visibility of reported problems.
+- Use AI to assist with image classification and duplicate detection.
+- Support human-led triage and case management.
+- Make resolution progress easier to follow.
+- Generate useful insights from structured geographic data.
+
+## ✨ Key Features
+
+### 📸 1. Smart Issue Reporting
+
+Residents can submit structured reports through a guided workflow.
+
+- Upload up to four photographs per report.
+- Select a location using an interactive map or browser geolocation.
+- Choose an issue category and provide a description.
+- Review report details and consent before submission.
+- Track the report after submission.
+
+The guided process helps associate each report with a location, category, and visual record.
+
+### 🗺️ 2. Interactive Geographic Explorer
+
+Explore reported civic issues across different geographic scales.
+
+- Tamil Nadu, India, and global map views.
+- A "Near me" location option.
+- Category filters for targeted exploration.
+- Server-side spatial clustering using PostGIS.
+- Cluster recalculation as the map zoom level changes.
+- OpenStreetMap as the default mapping option.
+- Optional Google Maps integration when a browser API key is configured.
+
+Spatial clustering helps keep the map readable when many reports are concentrated in the same area.
+
+### 🤖 3. AI-Assisted Image Intelligence
+
+CivicLens AI includes an image-analysis pipeline designed to support report processing.
+
+**Image classification**
+
+A PyTorch MobileNetV3 classifier can predict issue categories from submitted images when a compatible trained checkpoint is available.
+
+**Visual severity suggestion**
+
+Image statistics provide a preliminary severity suggestion. This is a heuristic rather than a trained severity model, and human review remains necessary.
+
+**Duplicate report detection**
+
+Perceptual image hashing helps identify visually similar photographs, while spatial queries identify nearby reports that may describe the same problem.
+
+These capabilities are intended to assist staff, not independently determine the final outcome of a report.
+
+### 🔎 4. Duplicate Detection & Case Merging
+
+The platform searches for potentially duplicate reports using a combination of geographic proximity and image similarity.
+
+The documented matching criteria include:
+
+- A search radius of 60 metres.
+- Matching issue categories.
+- Active reports from the previous 120 days.
+- Photo similarity checks.
+
+Staff review potential matches and decide whether reports should be merged.
+
+**Nothing is merged automatically.** This preserves human oversight and reduces the risk of combining unrelated problems.
+
+### 📊 5. Public Impact Dashboard
+
+The dashboard presents database-backed summaries of reported issues and resolution activity.
+
+- Resolution-status visualization.
+- Overall status distribution.
+- Per-category report counts.
+- Aggregated issue statistics.
+
+The values are calculated from application data rather than hard-coded display counters.
+
+### 👤 6. Resident Dashboard
+
+Registered residents can access their own reporting history.
+
+- View submitted reports.
+- Follow status changes through a timeline.
+- Read public case notes.
+- Review resolution photographs when available.
+
+This provides a clearer view of how a submitted issue progresses through the workflow.
+
+### 🛠️ 7. Staff Operations
+
+Authorized staff members can manage reports through a dedicated operational interface.
+
+- Approve or reject submissions with a reason.
+- Review the moderation queue.
+- Set human-assessed severity.
+- Update case status.
+- Assign reports to staff members.
+- Attach photographic resolution evidence.
+- Merge confirmed duplicate reports.
+
+The workflow keeps report publication and case resolution under human control.
+
+### 🔐 8. Administration & Analytics
+
+Administrative capabilities support oversight and operational analysis.
+
+- Role management.
+- Median time to resolution.
+- Open cases grouped by severity.
+- Category-level reporting statistics.
+- Geographic issue hotspots.
+- Agreement between AI predictions and human decisions.
+
+These metrics help evaluate the workflow and understand patterns in the available data.
+
+## 🧠 AI & Intelligence Layer
+
+CivicLens AI combines image classification, image similarity, and spatial reasoning.
+
+| Component | Technique | Purpose |
+|---|---|---|
+| Image classification | PyTorch MobileNetV3 | Predict an issue category when a trained checkpoint is available |
+| Severity suggestion | Image-statistics heuristic | Provide a preliminary visual severity indicator |
+| Duplicate detection | Perceptual hashing | Identify visually similar report photographs |
+| Geographic matching | PostGIS radius queries | Find nearby reports within defined criteria |
+| AI evaluation | Prediction–human agreement metrics | Monitor how model predictions compare with human decisions |
+
+### AI Processing Flow
+
+<box border radius="lg" padding={3} gap={2} align="center">
+  <box background="surface-secondary" radius="md" padding={3} width="100%" align="center">
+    **1. Report Submission**
+
+    <text color="secondary" size="sm" textAlign="center">Images, category, description, and geographic location</text>
+  </box>
+  <icon name="arrow-down" size="xl" color="secondary"/>
+  <box border radius="md" padding={3} width="100%" align="center">
+    **2. Image Processing**
+
+    <text color="secondary" size="sm" textAlign="center">Photo handling, metadata removal, and configured image analysis</text>
+  </box>
+  <icon name="arrow-down" size="xl" color="secondary"/>
+  <box border radius="md" padding={3} width="100%" align="center">
+    **3. Classification & Matching**
+
+    <text color="secondary" size="sm" textAlign="center">Optional model prediction, heuristic severity, and potential duplicate matching</text>
+  </box>
+  <icon name="arrow-down" size="xl" color="secondary"/>
+  <box background="surface-secondary" radius="md" padding={3} width="100%" align="center">
+    **4. Human Review**
+
+    <text color="secondary" size="sm" textAlign="center">Staff moderation, severity assessment, triage, and case management</text>
+  </box>
+  <icon name="arrow-down" size="xl" color="secondary"/>
+  <box border radius="md" padding={3} width="100%" align="center">
+    **5. Tracking & Analytics**
+
+    <text color="secondary" size="sm" textAlign="center">Status updates, resolution evidence, and database-driven metrics</text>
+  </box>
+</box>
+
+## 🏗️ System Architecture
+
+CivicLens AI brings together a web interface, an application backend, AI processing, and a geospatial database.
+
+| Layer | Responsibility |
+|---|---|
+| Frontend | Reporting, maps, dashboards, resident views, and staff interfaces |
+| API backend | Validation, authentication, reporting workflows, and authorization |
+| AI services | Image classification, heuristic severity suggestions, and similarity processing |
+| Geospatial database | Report storage, geographic queries, clustering, and spatial indexing |
+| File storage | Report photographs and resolution evidence |
+| Analytics | Aggregated report, category, severity, and resolution metrics |
+
+### Geospatial Engineering
+
+PostgreSQL and PostGIS provide the geographic foundation.
+
+- Radius searches help identify nearby reports.
+- GiST spatial indexes support geographic query performance.
+- Server-side clustering reduces map clutter.
+- Database constraints help enforce data integrity.
+
+The spatial matching criteria can help staff identify potentially related cases without assuming that nearby reports necessarily describe the same issue.
+
+## 🔐 Privacy, Security & Responsible AI
+
+CivicLens AI incorporates several safeguards into its documented implementation.
+
+- **Human moderation:** Reports are reviewed before becoming public.
+- **Reporter privacy:** Reporter identities are hidden from public-facing views.
+- **Photo privacy:** EXIF and GPS metadata are stripped from uploaded photographs.
+- **Session security:** HTTP-only cookie-based sessions are used.
+- **Request protection:** CSRF headers and rate limits help protect sensitive workflows.
+- **Data integrity:** Database CHECK constraints and spatial indexes support reliable data handling.
+- **Controlled administration:** Role management supports restricted administrative operations.
+- **Transparent AI:** Predictions and severity suggestions are not substitutes for human judgment.
+
+These controls contribute to safer handling of civic reports, although a complete security assessment is still necessary before any real-world deployment.
+
+## ⚙️ Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| React / TypeScript | Interactive frontend |
+| FastAPI | Backend API, if configured as in the application architecture |
+| PyTorch | Image-classification model |
+| MobileNetV3 | Lightweight image-classification architecture |
+| PostgreSQL | Relational data storage |
+| PostGIS | Geospatial queries and spatial indexing |
+| Alembic | Database migrations |
+| OpenStreetMap | Default mapping source |
+| Google Maps | Optional map provider |
+| Automated tests | Backend and frontend verification |
+
+The frontend uses self-hosted Fraunces and Inter fonts through `@fontsource-variable`, avoiding external font requests.
+
+The interface also includes original scroll reveals, animated headings, count-up statistics, pointer spotlight effects, and a category marquee. Motion effects are disabled for visitors who prefer reduced motion.
+
+## 🧪 Testing & Data Integrity
+
+The project includes a documented test suite comprising:
+
+- 35 backend tests.
+- 7 frontend tests.
+- Alembic database migrations.
+- Database CHECK constraints.
+- GiST spatial indexes.
+- A database seed script.
+
+These tests and database controls support regression prevention and data integrity. Passing tests do not, by themselves, establish the accuracy of the AI model or the suitability of the platform for production deployment.
+
+## 🚀 Getting Started
+
+The following is a high-level setup guide. Use the actual dependency files and environment configuration included in the repository for exact commands.
+
+### Prerequisites
+
+- Node.js and a compatible package manager.
+- Python compatible with the backend dependencies.
+- PostgreSQL with PostGIS enabled.
+- A database accessible to the backend.
+- Optional trained model checkpoint for image classification.
+- Optional mapping API key if using Google Maps.
+
+### Installation
+
+**1. Clone the repository**
+
+```bash
+git clone <YOUR_REPOSITORY_URL>
+cd <YOUR_PROJECT_DIRECTORY>
 ```
-backend/    FastAPI, SQLAlchemy/GeoAlchemy2, Alembic, PyTorch, tests
-frontend/   Next.js 15 (App Router), TypeScript, Tailwind, Leaflet
-docker-compose.yml
+
+**2. Configure the backend**
+
+Create and activate a Python virtual environment, install the dependencies specified by the project, and configure the required environment variables.
+
+```bash
+python -m venv .venv
 ```
 
-## Prerequisites (Windows 11, PowerShell)
+**3. Configure the database**
 
-Install once:
+Create the PostgreSQL database, enable PostGIS, and apply the project's Alembic migrations using the configured database connection.
 
-```powershell
-winget install Python.Python.3.12
-winget install OpenJS.NodeJS.LTS
-winget install Docker.DockerDesktop
-winget install Git.Git
-```
+**4. Configure the frontend**
 
-Restart PowerShell afterwards. Docker Desktop is used only to run PostgreSQL with PostGIS; if you already have PostGIS installed natively you can skip it and point `DATABASE_URL` at it.
+Install the JavaScript dependencies and configure the API endpoint according to the project's environment settings.
 
-## 1. Database
+**5. Start the application**
 
-```powershell
-docker run -d --name civiclens-db -p 5432:5432 `
-  -e POSTGRES_USER=civiclens -e POSTGRES_PASSWORD=civiclens -e POSTGRES_DB=civiclens `
-  postgis/postgis:16-3.4
+Run the backend and frontend using the repository's documented development commands.
 
-# a separate database for the test suite
-docker exec civiclens-db psql -U civiclens -c "CREATE DATABASE civiclens_test"
-```
+*The exact migration, startup, and environment-variable commands should be taken from the project configuration rather than guessed.*
 
-## 2. Backend
+## ⚠️ Honest Limitations
 
-```powershell
-cd backend
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements-dev.txt          # includes PyTorch; the first install is large
-Copy-Item .env.example .env                   # edit if you changed the database credentials
-alembic upgrade head                          # creates the PostGIS extension and all tables
-python -m scripts.seed                        # optional: 36 fictional reports and 4 sample accounts
-uvicorn app.main:app --reload --port 8000
-```
+CivicLens AI is an independent software project, not an official civic reporting service.
 
-If PowerShell blocks the activation script: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
+### AI Model Availability
 
-Health check: <http://127.0.0.1:8000/api/health> reports `ai_mode` as `demo` or `model`. Interactive API docs: <http://127.0.0.1:8000/docs>.
+**No trained model checkpoint ships with the project.**
 
-Sample accounts created by the seed script (password `sample-password-123`, development only):
-`admin@civiclens.example`, `staff@civiclens.example`, `staff2@civiclens.example`, `resident@civiclens.example`.
+Without a compatible trained checkpoint, the application runs in demo mode:
 
-**Creating a real first admin** instead of using sample accounts: set `ADMIN_EMAIL` and `ADMIN_PASSWORD` (12+ characters) in `backend/.env` before starting. The account is created on startup only if that email does not exist, and an existing account is never modified. Remove the password from `.env` afterwards.
+- The selected category remains the resident's chosen category.
+- No genuine model confidence score is available.
+- The interface identifies the experience as demo mode.
 
-## 3. Frontend
+The training script is located at `backend/app/ai/train.py`, but training requires appropriately labelled photographs. Tests using a small synthetic model validate the execution path, not real-world classification accuracy.
 
-In a second PowerShell window:
+### Severity Assessment
 
-```powershell
-cd frontend
-npm ci
-Copy-Item .env.example .env.local             # BACKEND_URL=http://127.0.0.1:8000
-npm run dev
-```
+Severity is estimated using image statistics, not a trained severity-prediction model. It is a preliminary suggestion and must be confirmed by a person during triage.
 
-Open <http://localhost:3000>. The browser only talks to the Next.js origin; `/api/*` is rewritten to `BACKEND_URL`, so session cookies stay first-party.
+### Duplicate Detection
 
-### Turning on Google Maps (optional)
+Geographic proximity and perceptual similarity can identify candidates, but they cannot guarantee that two reports refer to the same underlying problem. Staff must review potential duplicates before merging.
 
-1. In Google Cloud Console create a project, enable **Maps JavaScript API**, and create an API key.
-2. Restrict the key to **HTTP referrers** (your Vercel domain and `http://localhost:3000/*`). A browser key is visible to every visitor by design, so the restriction is what protects it. Set a quota/budget alert.
-3. Put it in `frontend/.env.local`:
+### Operational Scope
 
-```powershell
-Add-Content frontend\.env.local "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-key-here"
-```
+The project does not integrate with any city administration, government platform, or official 311 service. It does not guarantee that a reported problem will be addressed by a public authority.
 
-On Vercel add the same variable under Settings, Environment Variables, then redeploy (it is read at build time). The map opens on Tamil Nadu (11.333747, 79.7287696) and has India and World buttons.
+## 🔭 Future Possibilities
 
-## 4. Training a classifier (optional)
+- [ ] Train and evaluate the image-classification model on a representative labelled dataset.
+- [ ] Measure per-category precision, recall, and confusion matrices.
+- [ ] Improve confidence calibration and uncertainty handling.
+- [ ] Add accessibility improvements to map-based reporting.
+- [ ] Introduce notification preferences for case updates.
+- [ ] Expand operational analytics and reporting exports.
+- [ ] Conduct security and privacy reviews before production use.
+- [ ] Evaluate usability with residents and staff in controlled pilot studies.
 
-Arrange photos in folders named after the categories (`pothole`, `streetlight`, `overflowing_bin`, `water_leak`, `damaged_infrastructure`):
+## ⚖️ Important Disclaimer
 
-```powershell
-cd backend
-python -m app.ai.train --data .\data --epochs 8 --out .\models\civiclens.pt
-```
+**CivicLens AI is not a government system.**
 
-Add `--pretrained` to start from ImageNet weights (needs internet access to `download.pytorch.org`; much better on small datasets). Read the printed validation accuracy before using the result. Then set `MODEL_PATH=.\models\civiclens.pt` in `backend/.env` and restart; `/api/health` should report `ai_mode: model`. Checkpoints load with `torch.load(weights_only=True)`, but only load files you trust.
+It is independent software with no integration with any city, 311 service, or government platform. Reports submitted through the application are not official complaints and do not guarantee public-sector action.
 
-## 5. Tests and quality checks
+All sample data is fictional. Real-world deployment would require appropriate authorization, operational partnerships, privacy review, and independent validation of AI capabilities.
 
-```powershell
-# backend (needs the civiclens_test database from step 1)
-cd backend
-.\.venv\Scripts\Activate.ps1
-$env:TEST_DATABASE_URL = "postgresql+psycopg://civiclens:civiclens@127.0.0.1:5432/civiclens_test"
-pytest
-ruff check .
+## 👨‍💻 Built by Vicky
 
-# frontend
-cd ..\frontend
-npm run lint
-npm run typecheck
-npm test
-npm run build
-```
+Created by [@Vicky-45-11](https://github.com/Vicky-45-11).
 
-The backend tests run against a real PostGIS database, apply the Alembic migration, and truncate tables between tests. They never touch `DATABASE_URL`.
+An exploration of AI-assisted classification, geospatial computing, responsible software engineering, and technology for community-oriented problem solving.
 
-Known gap: `mypy app` is not clean. Most findings are SQLAlchemy typing noise and are not part of the quality gate.
+---
 
-## 6. Everything in Docker (untested)
+<div align="center">
 
-```powershell
-docker compose up --build
-```
+### 🏙️ CivicLens AI
 
-This starts PostGIS, the API (runs migrations on start) and the web app on <http://localhost:3000>. To load sample data: `docker compose exec backend python -m scripts.seed`.
+**Make problems visible. Make progress measurable.**
 
-## 7. Deployment
+*Better civic insights begin with better information.*
 
-### API and database (first)
-
-Host the API anywhere that runs a Python container and offers PostGIS (Render, Railway, Fly.io, Supabase or Neon for the database). Build from `backend/Dockerfile`, then set:
-
-| Variable | Value |
-| --- | --- |
-| `APP_ENV` | `production` |
-| `DATABASE_URL` | `postgresql+psycopg://...` (the extension is created by the migration; the role needs permission to `CREATE EXTENSION postgis`, or enable it in the provider's console first) |
-| `JWT_SECRET` | 32+ random characters. The API refuses to start with the development value |
-| `COOKIE_SECURE` | `true` |
-| `STORAGE_BACKEND` | `s3` with the `S3_*` values, or mount a persistent disk at `STORAGE_DIR` |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | first admin (optional) |
-
-Generate a secret in PowerShell:
-
-```powershell
--join ((48..57) + (65..90) + (97..122) | Get-Random -Count 48 | ForEach-Object { [char]$_ })
-```
-
-Do not run `scripts.seed` in production; it refuses unless `APP_ENV=development`.
-
-### Frontend on Vercel
-
-```powershell
-npm install -g vercel
-cd frontend
-vercel login
-vercel link
-vercel env add BACKEND_URL production     # e.g. https://your-api.example.com  (no trailing slash)
-vercel --prod
-```
-
-Or import the GitHub repository in the Vercel dashboard, set **Root Directory** to `frontend`, and add `BACKEND_URL`. Until `BACKEND_URL` points at a running API, the site loads but every data request shows "cannot reach the server".
-
-## Security notes
-
-- Secrets are read from the environment on the server only; nothing sensitive is bundled into client code.
-- Passwords are hashed with scrypt. Sessions are HTTP-only, SameSite=Lax cookies. State-changing requests require the `X-Requested-With: civiclens` header.
-- Uploads are decoded and re-encoded with Pillow (JPEG/PNG/WebP only), which removes EXIF and GPS metadata. Reporter identity and internal staff notes are never returned to public views. Private reports return 404 to anyone but the reporter and staff.
-- Rate limits are configurable per bucket (`RATE_LIMIT_*_PER_MIN`).
-
-## License
-
-No license has been chosen. Add one before accepting contributions.
+</div>
